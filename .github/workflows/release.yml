@@ -28,14 +28,14 @@ jobs:
       - name: Package Extension
         run: |
           npm install -g @vscode/vsce
-          vsce package -o mlir-inc-previewer-v${{ github.ref_name }}.vsix
+          vsce package -o mlir-inc-previewer-${{ github.ref_name }}.vsix
 
       # GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: mlir-inc-previewer-v${{ github.ref_name }}.vsix
+          files: mlir-inc-previewer-${{ github.ref_name }}.vsix
           body: "Release of version ${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
