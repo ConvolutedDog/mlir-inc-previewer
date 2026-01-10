@@ -2,7 +2,7 @@
   "name": "mlir-inc-previewer",
   "icon": "icon.png",
   "displayName": "MLIR Inc Previewer",
-  "description": "Open MLIR .inc files side by side",
+  "description": "Streamline MLIR development by previewing and managing .inc files automatically.",
   "version": "0.0.1",
   "publisher": "yangjianchao16",
   "repository": {
