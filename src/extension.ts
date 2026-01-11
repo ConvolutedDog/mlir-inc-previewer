@@ -494,6 +494,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 [MLIR Inc Previewer](https://github.com/ConvolutedDog/mlir-inc-previewer) is a VS Code extension designed for MLIR developers to quickly preview and manage \`.inc\` file content. It allows you to preview included \`.inc\` file contents without leaving your current file.
 
+![Usage Example GIF](https://github.com/ConvolutedDog/mlir-inc-previewer/blob/gif/Usage.gif)
+
 ## ✨ Core Features
 
 #### 🔄 Intelligent Expand/Collapse
