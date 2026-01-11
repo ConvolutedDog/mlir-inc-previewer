@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
   workflow_dispatch:
 
 jobs:
@@ -29,6 +36,12 @@ jobs:
         run: |
           npm install -g @vscode/vsce
           vsce package -o mlir-inc-previewer-${{ github.ref_name }}.vsix
+          if [ -f mlir-inc-previewer-${{ github.ref_name }}.vsix ]; then
+            echo "VSIX file created: mlir-inc-previewer-${{ github.ref_name }}.vsix"
+          else
+            echo "Failed to create VSIX file: mlir-inc-previewer-${{ github.ref_name }}.vsix"
+            exit 1
+          fi
 
       # GitHub Release
       - name: Create GitHub Release
@@ -36,18 +49,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: mlir-inc-previewer-${{ github.ref_name }}.vsix
-          body: "Release of version ${{ github.ref_name }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: mlir-inc-previewer-${{ github.ref_name }}.vsix
           body: |
-            ## Release of version v${{ github.ref_name }}
+            ## Release of mlir-inc-previewer ${{ github.ref_name }}
 
-            ### Installation Methods:
+            #### Installation Methods:
             1. **VS Code Marketplace**: Available at https://marketplace.visualstudio.com/items?itemName=yangjianchao16.mlir-inc-previewer
             2. **Open VSX Registry**: Available at https://open-vsx.org/extension/yangjianchao16/mlir-inc-previewer
             3. **Manual Install**: Download the .vsix file below and install with:
@@ -70,6 +75,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && env.OPEN_VSX_TOKEN != ''
         run: |
           echo "Publishing to Open VSX..."
+          npm install -g ovsx
           ovsx publish mlir-inc-previewer-${{ github.ref_name }}.vsix \
             --pat ${{ secrets.OPEN_VSX_TOKEN }}
         env:
