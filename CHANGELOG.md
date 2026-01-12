@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### CHANGED
+
+- Replace Usage Example GIF in README and help
+
 ## [0.0.2] - 2025-05-12
 
-## Added
+### Added
 
 - Support comprehensive C/C++ file extensions including:
   - Standard: .c, .cpp, .cxx, .h, .hpp, .hxx
@@ -22,12 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refine activation conditions to check both editor language ID and file extension
 - Add Usage Example GIF in README and help
 
-## Fixed
+### Fixed
 
 - Fix incorrect regex pattern that previously matched any language containing 'c'
 
 ## [0.0.1] - 2025-05-11
 
-## Added
+### Added
 
 - Initial release

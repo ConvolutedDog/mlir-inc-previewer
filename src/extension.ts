@@ -8,8 +8,8 @@ export function activate(context: vscode.ExtensionContext) {
   // =========================================================================
   // These tags are used to mark the beginning and end of inserted .inc content.
   // They allow us to identify and later remove the preview blocks.
-  const BEGIN_TAG = "/// --- [MLIR_INC_PREVIEW_START] ---";
-  const END_TAG = "/// --- [MLIR_INC_PREVIEW_END] ---";
+  const BEGIN_TAG = '/// --- [MLIR_INC_PREVIEW_START] ---';
+  const END_TAG = '/// --- [MLIR_INC_PREVIEW_END] ---';
 
   // =========================================================================
   // STATUS BAR ITEM SETUP
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!editor) {
       // No active editor: show default state
       myStatusBarItem.text = `$(check) MLIR Inc Preview: Clean`;
-      myStatusBarItem.tooltip = "MLIR Inc Preview: No .inc previews to clean";
+      myStatusBarItem.tooltip = 'MLIR Inc Preview: No .inc previews to clean';
       return;
     }
 
@@ -61,7 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
     } else {
       // No preview blocks: show clean state
       myStatusBarItem.text = `$(check) MLIR Inc Preview: Clean`;
-      myStatusBarItem.tooltip = "MLIR Inc Preview: No .inc previews to clean";
+      myStatusBarItem.tooltip = 'MLIR Inc Preview: No .inc previews to clean';
 
       // Reset to default background
       myStatusBarItem.backgroundColor = undefined;
@@ -140,8 +140,8 @@ export function activate(context: vscode.ExtensionContext) {
    * This allows the command to work even when the cursor is near but not
    * exactly on the #include line.
    */
-  function findIncIncludeLine(doc: vscode.TextDocument,
-                              currentLine: number): number {
+  function findIncIncludeLine(
+      doc: vscode.TextDocument, currentLine: number): number {
     // Check current line first
     if (isIncIncludeLine(doc.lineAt(currentLine).text)) {
       return currentLine;
@@ -164,7 +164,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    return -1; // Not found
+    return -1;  // Not found
   }
 
   // =========================================================================
@@ -176,8 +176,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(myStatusBarItem);
 
   // Update status bar when active editor changes
-  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(
-      () => { updateStatusBarItem(); }));
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
+    updateStatusBarItem();
+  }));
 
   // Update status bar when document content changes
   context.subscriptions.push(
@@ -210,8 +211,7 @@ export function activate(context: vscode.ExtensionContext) {
   let openDisposable = vscode.commands.registerCommand(
       'mlir-inc-previewer.openSide', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor)
-          return;
+        if (!editor) return;
 
         const doc = editor.document;
         const currentLine = editor.selection.active.line;
@@ -221,7 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (incIncludeLine === -1) {
           vscode.window.showWarningMessage(
-              "MLIR Inc Preview: No .inc include statement found near cursor");
+              'MLIR Inc Preview: No .inc include statement found near cursor');
           return;
         }
 
@@ -275,8 +275,8 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Insert the content after the include line
                 await editor.edit(editBuilder => {
-                  editBuilder.insert(new vscode.Position(incIncludeLine + 1, 0),
-                                     insertText);
+                  editBuilder.insert(
+                      new vscode.Position(incIncludeLine + 1, 0), insertText);
                 });
 
                 updateStatusBarItem();
@@ -290,15 +290,15 @@ export function activate(context: vscode.ExtensionContext) {
               }
             } else {
               vscode.window.showInformationMessage(
-                  "MLIR Inc Preview: Target is not a .inc file");
+                  'MLIR Inc Preview: Target is not a .inc file');
             }
           } else {
             vscode.window.showInformationMessage(
-                "MLIR Inc Preview: No .inc file definition found");
+                'MLIR Inc Preview: No .inc file definition found');
           }
         } catch (e: any) {
-          vscode.window.showErrorMessage("MLIR Inc Preview: Cannot expand: " +
-                                         (e.message || e));
+          vscode.window.showErrorMessage(
+              'MLIR Inc Preview: Cannot expand: ' + (e.message || e));
         }
       });
 
@@ -321,8 +321,7 @@ export function activate(context: vscode.ExtensionContext) {
   let cleanDisposable = vscode.commands.registerCommand(
       'mlir-inc-previewer.cleanAll', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor)
-          return;
+        if (!editor) return;
 
         const doc = editor.document;
         let deleteRanges: vscode.Range[] = [];
@@ -351,7 +350,7 @@ export function activate(context: vscode.ExtensionContext) {
             for (let i = deleteRanges.length - 1; i >= 0; i--) {
               editBuilder.delete(deleteRanges[i]);
             }
-          }, {undoStopBefore : false, undoStopAfter : false});
+          }, {undoStopBefore: false, undoStopAfter: false});
 
           const message =
               `MLIR Inc Preview: Cleaned ${deleteRanges.length} preview${
@@ -359,7 +358,7 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.window.setStatusBarMessage(`$(check) ${message}`, 3000);
           updateStatusBarItem();
         } else {
-          const message = "MLIR Inc Preview: No preview blocks found";
+          const message = 'MLIR Inc Preview: No preview blocks found';
           vscode.window.setStatusBarMessage(`$(check) ${message}`, 3000);
         }
       });
@@ -383,8 +382,7 @@ export function activate(context: vscode.ExtensionContext) {
   let cleanSaveDisposable = vscode.commands.registerCommand(
       'mlir-inc-previewer.cleanAndSave', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor)
-          return;
+        if (!editor) return;
 
         const document = editor.document;
         const originalContent = document.getText();
@@ -414,7 +412,7 @@ export function activate(context: vscode.ExtensionContext) {
               3000);
         } else {
           vscode.window.setStatusBarMessage(
-              "$(check) MLIR Inc Preview: No preview blocks found to clean, file saved",
+              '$(check) MLIR Inc Preview: No preview blocks found to clean, file saved',
               3000);
         }
 
@@ -435,8 +433,7 @@ export function activate(context: vscode.ExtensionContext) {
   let NavigateNextDisposable = vscode.commands.registerCommand(
       'mlir-inc-previewer.navigateNext', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor)
-          return;
+        if (!editor) return;
 
         const doc = editor.document;
         const currentLine = editor.selection.active.line;
@@ -472,15 +469,16 @@ export function activate(context: vscode.ExtensionContext) {
               2000);
         } else {
           vscode.window.setStatusBarMessage(
-              "$(check) MLIR Inc Preview: No more preview blocks found", 2000);
+              '$(check) MLIR Inc Preview: No more preview blocks found', 2000);
         }
       });
 
   // =========================================================================
   // REGISTER ALL COMMANDS
   // =========================================================================
-  context.subscriptions.push(openDisposable, cleanDisposable,
-                             cleanSaveDisposable, NavigateNextDisposable);
+  context.subscriptions.push(
+      openDisposable, cleanDisposable, cleanSaveDisposable,
+      NavigateNextDisposable);
 
   // =========================================================================
   // HELPER COMMAND: SHOW HELP
@@ -494,7 +492,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 [MLIR Inc Previewer](https://github.com/ConvolutedDog/mlir-inc-previewer) is a VS Code extension designed for MLIR developers to quickly preview and manage \`.inc\` file content. It allows you to preview included \`.inc\` file contents without leaving your current file.
 
-![Usage Example GIF](https://github.com/ConvolutedDog/mlir-inc-previewer/blob/gif/Usage.gif)
+![Usage Example GIF](https://private-user-images.githubusercontent.com/102723346/534348420-7977b6bf-3b07-4d52-9dd7-767974c0a2b1.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgyMDAxMTAsIm5iZiI6MTc2ODE5OTgxMCwicGF0aCI6Ii8xMDI3MjMzNDYvNTM0MzQ4NDIwLTc5NzdiNmJmLTNiMDctNGQ1Mi05ZGQ3LTc2Nzk3NGMwYTJiMS5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMTEyJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDExMlQwNjM2NTBaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0wNWYzMmVjZGUwMTI5NGVmYjQ5MDg3NWY2MzczMWU4ZWM2MTU3ZjdmMDdhNDZiYzFhYjM4NzhkNGU5OGY0NzE5JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.Nh49F9JcgukDDe6VUUqFCBuvVvkyXON6uv-Hph_RkQU)
 
 ## ✨ Core Features
 
@@ -571,8 +569,9 @@ export function activate(context: vscode.ExtensionContext) {
 This extension is open for contributions. Please submit issues and pull requests on the GitHub repository.
 `;
 
-          const uri = vscode.Uri.parse('untitled:' +
-                                       'MLIR_Inc_Previewer_Help.md');
+          const uri = vscode.Uri.parse(
+              'untitled:' +
+              'MLIR_Inc_Previewer_Help.md');
           const doc = await vscode.workspace.openTextDocument(uri);
           const edit = new vscode.WorkspaceEdit();
           edit.insert(uri, new vscode.Position(0, 0), content);
