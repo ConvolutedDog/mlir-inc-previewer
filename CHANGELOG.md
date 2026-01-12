@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### CHANGED
+## [0.0.3] - 2025-05-12
 
+### Added
+
+- Add support for collapsing previews if the cursor is inside a preview block
+- Add comment for original include line after expanding preview
+- Add 'expandAll' command to expand all previews
+
+### Changed
+
+- Change the help showing method to directly opening the README file
+- Refactored the code
 - Replace Usage Example GIF in README and help
 
 ## [0.0.2] - 2025-05-12

@@ -45,6 +45,7 @@
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+Shift+U` | Toggle .inc preview |
+| `Ctrl+Shift+Y` | Expand all .inc preview |
 | `Ctrl+S` | Clean all previews and save file |
 
 ## 📋 Requirements
@@ -54,6 +55,7 @@
 ## 📋 Available Commands
 
 - **MLIR Inc: Expand/Collapse Preview** - Toggle .inc content display
+- **MLIR Inc: Expand All Preview Content** - Expand all preview blocks
 - **MLIR Inc: Clean All Preview Content** - Remove all preview blocks
 - **MLIR Inc: Navigate Next Preview** - Jump to next preview block
 - **MLIR Inc: Show Help** - Display help documentation
@@ -73,6 +75,9 @@
    /// .inc file content here
    /// --- [MLIR_INC_PREVIEW_END] ---
    ```
+
+3. When you press `Ctrl+Shift+Y`:
+   - Extension expands all preview blocks in the file
 
 ## 📥 Installation
 

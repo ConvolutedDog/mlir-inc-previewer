@@ -1,0 +1,330 @@
+import {assert} from 'console';
+import * as fs from 'fs';
+import * as vscode from 'vscode';
+
+import {detectPreviewBlocksFromDoc, findAllCommentedIncludeLines, findAllIncIncludeLine, findAllPreviewBlocks, findCommentedIncIncludeLine, findIncIncludeLine} from './helpers';
+import {BEGIN_COMMENT_LINE, BEGIN_TAG, END_COMMENT_LINE, END_TAG} from './types';
+
+/**
+ * Preview manager for .inc files.
+ */
+export class PreviewManager {
+  /**
+   * Toggles preview for .inc file at current cursor position.
+   */
+  public static togglePreview = async(): Promise<void> => {
+    const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const doc: vscode.TextDocument = editor.document;
+    const currentLine: number = editor.selection.active.line;
+
+    // If found a commented include line, reverse it
+    const commentedIncIncludeLine: number =
+        findCommentedIncIncludeLine(doc, currentLine);
+
+    // Check for collapse
+    if (commentedIncIncludeLine !== -1) {
+      // TODO: If the cursor is in a preview block range, we can also collapse.
+      if (await PreviewManager.tryCollapsePreview(
+              editor, doc, commentedIncIncludeLine)) {
+        return;
+      } else {
+        vscode.window.showErrorMessage(
+            'MLIR Inc Preview: Found commented include line but not successfully collapsed');
+      }
+    } else {
+      const incIncludeLine: number = findIncIncludeLine(doc, currentLine);
+      if (incIncludeLine !== -1) {
+        // Otherwise expand
+        await PreviewManager.expandPreview(editor, doc, incIncludeLine);
+      } else {
+        vscode.window.showWarningMessage(
+            'MLIR Inc Preview: No .inc include statement found near cursor');
+        return;
+      }
+    }
+  };
+
+  /**
+   * Attempts to collapse an existing preview.
+   */
+  private static tryCollapsePreview = async(
+      editor: vscode.TextEditor, doc: vscode.TextDocument,
+      incIncludeLine: number): Promise<boolean> => {
+    const nextLineIdx: number = Math.min(incIncludeLine + 1, doc.lineCount - 1);
+    if (doc.lineAt(nextLineIdx).text.includes(BEGIN_TAG)) {
+      let endLineIdx = -1;
+      // This is wrong for nested includes, but we have not found this case.
+      for (let i = nextLineIdx; i < doc.lineCount; i++) {
+        if (doc.lineAt(i).text.includes(END_TAG)) {
+          endLineIdx = i;
+          break;
+        }
+      }
+      if (endLineIdx !== -1) {
+        // Reverse the commented include line
+        await editor.edit((editBuilder) => {
+          const commentedLine = doc.lineAt(incIncludeLine);
+          const commentedText = commentedLine.text;
+          const trimmedText = commentedText.trim();
+
+          if (trimmedText.endsWith(END_COMMENT_LINE) &&
+              trimmedText.startsWith(BEGIN_COMMENT_LINE)) {
+            let originalText = commentedText;
+
+            // Remove the leading BEGIN_COMMENT_LINE
+            if (originalText.startsWith(BEGIN_COMMENT_LINE)) {
+              originalText = originalText.substring(BEGIN_COMMENT_LINE.length);
+            }
+
+            // Remove the ending END_COMMENT_LINE
+            if (originalText.endsWith(END_COMMENT_LINE)) {
+              originalText = originalText.substring(
+                  0, originalText.length - END_COMMENT_LINE.length);
+            }
+
+            editBuilder.replace(
+                new vscode.Range(
+                    incIncludeLine, 0, incIncludeLine, commentedText.length),
+                originalText.trim());
+          }
+        });
+
+        // Delete the preview block
+        await editor.edit((editBuilder) => {
+          editBuilder.delete(
+              new vscode.Range(nextLineIdx, 0, endLineIdx + 1, 0));
+        });
+        return true;
+      } else {
+        vscode.window.showWarningMessage(
+            `MLIR Inc Preview: No matching ${END_TAG} found for preview`);
+        return false;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * Expands a new preview for .inc file.
+   */
+  private static expandPreview = async(
+      editor: vscode.TextEditor, doc: vscode.TextDocument,
+      incIncludeLine: number): Promise<void> => {
+    try {
+      const targetPosition = new vscode.Position(incIncludeLine, 0);
+      editor.selection = new vscode.Selection(targetPosition, targetPosition);
+
+      const locations = await vscode.commands.executeCommand<any>(
+          'vscode.executeDefinitionProvider', doc.uri, targetPosition);
+
+      if (locations && locations.length > 0) {
+        const target = Array.isArray(locations) ? locations[0] : locations;
+        const targetUri: vscode.Uri = target.uri || target.targetUri;
+
+        if (targetUri.fsPath.endsWith('.inc') ||
+            targetUri.fsPath.includes('.inc')) {
+          const content = fs.readFileSync(targetUri.fsPath, 'utf8');
+          const insertText = `${BEGIN_TAG}\n/// MLIR Inc File: ${
+              targetUri.fsPath}\n${content}\n${END_TAG}\n`;
+
+          // Insert the included content
+          await editor.edit((editBuilder) => {
+            editBuilder.insert(
+                new vscode.Position(incIncludeLine + 1, 0), insertText);
+          });
+
+          // Comment the original line
+          await editor.edit((editBuilder) => {
+            const originalLine = doc.lineAt(incIncludeLine);
+            const originalText = originalLine.text;
+
+            if (!originalText.trim().startsWith('//')) {
+              // TODO: There may be a bug about clang-format.
+              const commentedText =
+                  BEGIN_COMMENT_LINE + originalText + END_COMMENT_LINE;
+              editBuilder.replace(
+                  new vscode.Range(
+                      incIncludeLine, 0, incIncludeLine, originalText.length),
+                  commentedText);
+            }
+          });
+
+          vscode.window.setStatusBarMessage(
+              `$(check) MLIR Inc Preview: Expanded ${targetUri.fsPath}`, 2000);
+        } else {
+          vscode.window.showInformationMessage(
+              'MLIR Inc Preview: Target is not a .inc file');
+        }
+      } else {
+        vscode.window.showInformationMessage(
+            'MLIR Inc Preview: No .inc file definition found');
+      }
+    } catch (e: any) {
+      vscode.window.showErrorMessage(
+          'MLIR Inc Preview: Cannot expand: ' + (e.message || e));
+    }
+  };
+
+  /**
+   * Expands all preview blocks in the current file.
+   */
+  public static expandAllPreview = async(): Promise<void> => {
+    const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const doc: vscode.TextDocument = editor.document;
+    const allIncLines = findAllIncIncludeLine(doc);
+
+    for (let i = allIncLines.length - 1; i >= 0; i--) {
+      const incIncludeLine = allIncLines[i];
+      await PreviewManager.expandPreview(editor, doc, incIncludeLine);
+    }
+  };
+
+  /**
+   * Cleans all preview blocks in the current file.
+   */
+  public static cleanAllPreviews = async(): Promise<void> => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const doc = editor.document;
+
+    const commentedIncludeLines = findAllCommentedIncludeLines(doc);
+
+    if (commentedIncludeLines.length > 0) {
+      for (const commentedIncludeLine of commentedIncludeLines) {
+        const incIncludeLine = commentedIncludeLine.start.line;
+        // Reverse the commented include line
+        await editor.edit((editBuilder) => {
+          const commentedLine = doc.lineAt(incIncludeLine);
+          const commentedText = commentedLine.text;
+          const trimmedText = commentedText.trim();
+
+          if (trimmedText.endsWith(END_COMMENT_LINE) &&
+              trimmedText.startsWith(BEGIN_COMMENT_LINE)) {
+            let originalText = commentedText;
+
+            // Remove the leading BEGIN_COMMENT_LINE
+            if (originalText.startsWith(BEGIN_COMMENT_LINE)) {
+              originalText = originalText.substring(BEGIN_COMMENT_LINE.length);
+            }
+
+            // Remove the ending END_COMMENT_LINE
+            if (originalText.endsWith(END_COMMENT_LINE)) {
+              originalText = originalText.substring(
+                  0, originalText.length - END_COMMENT_LINE.length);
+            }
+
+            editBuilder.replace(
+                new vscode.Range(
+                    incIncludeLine, 0, incIncludeLine, commentedText.length),
+                originalText.trim());
+          }
+        });
+      }
+    }
+
+    const deleteRanges = findAllPreviewBlocks(doc);
+
+    if (deleteRanges.length > 0) {
+      await editor.edit((editBuilder) => {
+        // Delete from bottom to top to maintain correct indices
+        for (let i = deleteRanges.length - 1; i >= 0; i--) {
+          editBuilder.delete(deleteRanges[i]);
+        }
+      }, {undoStopBefore: false, undoStopAfter: false});
+
+      const message = `MLIR Inc Preview: Cleaned ${
+          deleteRanges.length} preview${deleteRanges.length > 1 ? 's' : ''}`;
+      vscode.window.setStatusBarMessage(`$(check) ${message}`, 3000);
+    } else {
+      const message = 'MLIR Inc Preview: No preview blocks found';
+      vscode.window.setStatusBarMessage(`$(check) ${message}`, 3000);
+    }
+  };
+
+  /**
+   * Navigates to the next preview block.
+   */
+  public static navigateToNextPreview = async(): Promise<void> => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const doc = editor.document;
+    const currentLine = editor.selection.active.line;
+    let nextPreviewStart = -1;
+
+    // Find the first BEGIN_TAG AFTER current position
+    for (let i = currentLine + 1; i < doc.lineCount; i++) {
+      if (doc.lineAt(i).text.includes(BEGIN_TAG)) {
+        nextPreviewStart = i;
+        break;
+      }
+    }
+
+    // If not found after current position, search from beginning
+    if (nextPreviewStart === -1) {
+      for (let i = 0; i < currentLine; i++) {
+        if (doc.lineAt(i).text.includes(BEGIN_TAG)) {
+          nextPreviewStart = i;
+          break;
+        }
+      }
+    }
+
+    if (nextPreviewStart !== -1) {
+      const position = new vscode.Position(nextPreviewStart, 0);
+      editor.selection = new vscode.Selection(position, position);
+      editor.revealRange(new vscode.Range(position, position));
+
+      vscode.window.setStatusBarMessage(
+          `$(check) MLIR Inc Preview: Jumped to preview (line ${
+              nextPreviewStart + 1})`,
+          2000);
+    } else {
+      vscode.window.setStatusBarMessage(
+          '$(check) MLIR Inc Preview: No more preview blocks found', 2000);
+    }
+  };
+
+  /**
+   * Cleans previews and saves the file.
+   */
+  public static cleanAndSave = async(): Promise<void> => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const document: vscode.TextDocument = editor.document;
+    const originalPreviewCount: number = detectPreviewBlocksFromDoc(document);
+
+    await PreviewManager.cleanAllPreviews();
+
+    // Brief delay to ensure editor updates
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const newPreviewCount = detectPreviewBlocksFromDoc(document);
+    if (newPreviewCount !== 0) {
+      vscode.window.showErrorMessage(
+          'MLIR Inc Preview: Failed to clean all previews.');
+      return;
+    }
+
+    const previewsCleaned = originalPreviewCount - newPreviewCount;
+
+    await editor.document.save();
+
+    if (previewsCleaned > 0) {
+      vscode.window.setStatusBarMessage(
+          `$(check) Cleaned ${previewsCleaned} preview${
+              previewsCleaned > 1 ? 's' : ''} and saved`,
+          3000);
+    } else {
+      vscode.window.setStatusBarMessage(
+          '$(check) MLIR Inc Preview: No preview blocks found to clean, file saved',
+          3000);
+    }
+  };
+}
