@@ -18,7 +18,8 @@
   ],
   "activationEvents": [
     "onLanguage:cpp",
-    "onLanguage:c"
+    "onLanguage:c",
+    "onLanguage:cuda-cpp"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -30,6 +31,10 @@
       {
         "command": "mlir-inc-previewer.cleanAll",
         "title": "MLIR Inc: Clean All Preview Content"
+      },
+      {
+        "command": "mlir-inc-previewer.cleanAndSave",
+        "title": "MLIR Inc: Clean and Save"
       },
       {
         "command": "mlir-inc-previewer.navigateNext",
@@ -45,13 +50,13 @@
         "command": "mlir-inc-previewer.openSide",
         "key": "ctrl+shift+u",
         "mac": "ctrl+shift+u",
-        "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+        "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
       },
       {
         "command": "mlir-inc-previewer.cleanAndSave",
         "key": "ctrl+s",
         "mac": "cmd+s",
-        "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+        "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
       }
     ],
     "menus": {
@@ -59,22 +64,27 @@
         {
           "command": "mlir-inc-previewer.openSide",
           "group": "mlir_group@1",
-          "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
           "command": "mlir-inc-previewer.cleanAll",
           "group": "mlir_group@2",
-          "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+        },
+        {
+          "command": "mlir-inc-previewer.cleanAndSave",
+          "group": "mlir_group@3",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
           "command": "mlir-inc-previewer.navigateNext",
-          "group": "mlir_group@3",
-          "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+          "group": "mlir_group@4",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
           "command": "mlir-inc-previewer.showHelp",
-          "group": "mlir_group@4",
-          "when": "editorTextFocus && editorLangId =~ /cpp|c/"
+          "group": "mlir_group@5",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         }
       ]
     }
