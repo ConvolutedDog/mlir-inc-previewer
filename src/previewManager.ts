@@ -1,9 +1,13 @@
+// Copyright (c) 2026 Jianchao Yang
+// Licensed under the MIT License - see the LICENSE file for details.
+
 import {assert} from 'console';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 
 import {detectPreviewBlocksFromDoc, findAllCommentedIncludeLines, findAllIncIncludeLine, findAllPreviewBlocks, findCommentedIncIncludeLine, findIncIncludeLine} from './helpers';
-import {BEGIN_COMMENT_LINE, BEGIN_TAG, END_COMMENT_LINE, END_TAG} from './types';
+import {MacroStateManager} from './macrosManager';
+import {BEGIN_COMMENT_LINE, BEGIN_TAG, END_COMMENT_LINE, END_TAG, ifRemoveUnrelatedPreviewBlocks} from './types';
 
 /**
  * Preview manager for .inc files.
@@ -125,31 +129,97 @@ export class PreviewManager {
 
         if (targetUri.fsPath.endsWith('.inc') ||
             targetUri.fsPath.includes('.inc')) {
-          const content = fs.readFileSync(targetUri.fsPath, 'utf8');
-          const insertText = `${BEGIN_TAG}\n/// MLIR Inc File: ${
-              targetUri.fsPath}\n${content}\n${END_TAG}\n`;
-
-          // Insert the included content
-          await editor.edit((editBuilder) => {
-            editBuilder.insert(
-                new vscode.Position(incIncludeLine + 1, 0), insertText);
-          });
-
-          // Comment the original line
-          await editor.edit((editBuilder) => {
-            const originalLine = doc.lineAt(incIncludeLine);
-            const originalText = originalLine.text;
-
-            if (!originalText.trim().startsWith('//')) {
-              // TODO: There may be a bug about clang-format.
-              const commentedText =
-                  BEGIN_COMMENT_LINE + originalText + END_COMMENT_LINE;
-              editBuilder.replace(
-                  new vscode.Range(
-                      incIncludeLine, 0, incIncludeLine, originalText.length),
-                  commentedText);
+          if (ifRemoveUnrelatedPreviewBlocks) {
+            // 1. Process the macro state from the beginning of the document to
+            // incIncludeLine
+            const updatedDoc = editor.document;
+            const macroManager = new MacroStateManager();
+            for (let i = 0; i < incIncludeLine; i++) {
+              const lineText = updatedDoc.lineAt(i).text;
+              const trimmed = lineText.trim();
+              macroManager.processLine(trimmed, i);
             }
-          });
+
+            // 2. Read the .inc file content
+            const originalContent = fs.readFileSync(targetUri.fsPath, 'utf8');
+            const incLines = originalContent.split('\n');
+            const processedLines: string[] = [];
+
+            // 3. Process each line of the .inc file, applying the current macro
+            // state
+            for (let i = 0; i < incLines.length; i++) {
+              const line = incLines[i];
+              const trimmed = line.trim();
+              macroManager.processLine(trimmed, i + incIncludeLine);
+
+              if (trimmed.startsWith('#if') || trimmed.startsWith('#ifndef') ||
+                  trimmed.startsWith('#if defined') ||
+                  trimmed.startsWith('#if !defined') ||
+                  trimmed.startsWith('#elif') || trimmed.startsWith('#else') ||
+                  trimmed.startsWith('#endif')) {
+                processedLines.push(line);
+                continue;
+              }
+
+              if (macroManager.isCurrentLineActive()) {
+                processedLines.push(line);
+              }
+            }
+
+            // 4. Create the processed content
+            const processedContent = processedLines.join('\n');
+            const insertText = `${BEGIN_TAG}\n/// MLIR Inc File: ${
+                targetUri.fsPath}\n${processedContent}\n${END_TAG}\n`;
+
+            // 5. Insert the processed content
+            await editor.edit((editBuilder) => {
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine + 1, 0), insertText);
+            });
+
+            // 6. Comment the original line
+            await editor.edit((editBuilder) => {
+              const originalLine = doc.lineAt(incIncludeLine);
+              const originalText = originalLine.text;
+
+              if (!originalText.trim().startsWith('//')) {
+                // TODO: There may be a bug about clang-format.
+                const commentedText =
+                    BEGIN_COMMENT_LINE + originalText + END_COMMENT_LINE;
+                editBuilder.replace(
+                    new vscode.Range(
+                        incIncludeLine, 0, incIncludeLine, originalText.length),
+                    commentedText);
+              }
+            });
+          } else {
+            // 1. Read the .inc file content
+            const content = fs.readFileSync(targetUri.fsPath, 'utf8');
+            const insertText = `${BEGIN_TAG}\n/// MLIR Inc File: ${
+                targetUri.fsPath}\n${content}\n${END_TAG}\n`;
+
+            // 2. Insert the included content
+            await editor.edit((editBuilder) => {
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine + 1, 0), insertText);
+            });
+
+            // 3. Comment the original line
+            await editor.edit((editBuilder) => {
+              const originalLine = doc.lineAt(incIncludeLine);
+              const originalText = originalLine.text;
+
+              if (!originalText.trim().startsWith('//')) {
+                // TODO: There may be a bug about clang-format.
+                const commentedText =
+                    BEGIN_COMMENT_LINE + originalText + END_COMMENT_LINE;
+                editBuilder.replace(
+                    new vscode.Range(
+                        incIncludeLine, 0, incIncludeLine, originalText.length),
+                    commentedText);
+              }
+            });
+          }
 
           vscode.window.setStatusBarMessage(
               `$(check) MLIR Inc Preview: Expanded ${targetUri.fsPath}`, 2000);
@@ -171,6 +241,7 @@ export class PreviewManager {
    * Expands all preview blocks in the current file.
    */
   public static expandAllPreview = async(): Promise<void> => {
+    // TODO: Should clear all previews first before expanding all.
     const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
     if (!editor) return;
 

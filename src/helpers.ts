@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Jianchao Yang
+// Licensed under the MIT License - see the LICENSE file for details.
+
 import * as vscode from 'vscode';
 
 import {BEGIN_COMMENT_LINE, BEGIN_TAG, END_COMMENT_LINE, END_TAG, ifPreviewReadme, SearchIncLineRange} from './types';
