@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Jianchao Yang
+// Licensed under the MIT License - see the LICENSE file for details.
+
 import * as vscode from 'vscode';
 
 import {registerCommands} from './commands';
