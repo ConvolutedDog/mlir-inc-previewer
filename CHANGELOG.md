@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add support to remove unrelated preview blocks based on conditional compilation
+
+## [0.0.4] - 2026-01-19
+
+### Added
+
 - Add comprehensive test suite using Jest in GitHub Actions workflow
 - Support dev* branch pattern for better development workflow
 - Add MIT license headers to all source files
