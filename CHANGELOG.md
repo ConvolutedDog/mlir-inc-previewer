@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-01-20
+
 ### Added
 
-- Add support to remove unrelated preview blocks based on conditional compilation
+- Enable removing unrelated preview blocks based on the current file's conditional compilation when expanding all previews
+
+### Changed
+
+- Reorder expandAllPreview from reverse to forward iteration
 
 ## [0.0.4] - 2026-01-19
 

@@ -241,16 +241,20 @@ export class PreviewManager {
    * Expands all preview blocks in the current file.
    */
   public static expandAllPreview = async(): Promise<void> => {
-    // TODO: Should clear all previews first before expanding all.
     const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    const doc: vscode.TextDocument = editor.document;
-    const allIncLines = findAllIncIncludeLine(doc);
+    // Reget document and line number
+    let currentDoc = editor.document;
+    let allIncLines = findAllIncIncludeLine(currentDoc);
 
-    for (let i = allIncLines.length - 1; i >= 0; i--) {
-      const incIncludeLine = allIncLines[i];
-      await PreviewManager.expandPreview(editor, doc, incIncludeLine);
+    // Expand each .inc file
+    while (allIncLines.length > 0) {
+      const incIncludeLine = allIncLines[0];
+      await PreviewManager.expandPreview(editor, currentDoc, incIncludeLine);
+      // Reget document and line number caused by inserting content
+      currentDoc = editor.document;
+      allIncLines = findAllIncIncludeLine(currentDoc);
     }
   };
 

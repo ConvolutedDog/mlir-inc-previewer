@@ -22,11 +22,8 @@ export const ifPreviewReadme = false;
 //
 // TODO: This feature is only available when all preview blocks are expanded
 //       in the order of line numbers in the text. In other situations (not
-//       in order or choosing to expand all), there are currently bugs:
+//       in order), there are currently bugs:
 //       1. Not in order: A later preview block cannot know the conditional
 //          compilation statements in preceding preview blocks that have not
 //          been expanded.
-//       2. Choosing to expand all: In the current version, expanding all is
-//          done in reverse order, so it also encounters the same problem as
-//          expanding out of order.
-export const ifRemoveUnrelatedPreviewBlocks = false;
+export const ifRemoveUnrelatedPreviewBlocks = true;
