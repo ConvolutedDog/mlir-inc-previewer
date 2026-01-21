@@ -52,62 +52,108 @@ export class PreviewManager {
 
   /**
    * Attempts to collapse an existing preview.
+   *
+   * IMPORTANT:
+   * We must avoid doing multiple editor.edit() calls based on old line indices.
+   * Otherwise, once we delete clang-format lines, the preview block line
+   * numbers shift and we may delete wrong ranges.
    */
   private static tryCollapsePreview = async(
       editor: vscode.TextEditor, doc: vscode.TextDocument,
       incIncludeLine: number): Promise<boolean> => {
-    const nextLineIdx: number = Math.min(incIncludeLine + 1, doc.lineCount - 1);
-    if (doc.lineAt(nextLineIdx).text.includes(BEGIN_TAG)) {
-      let endLineIdx = -1;
-      // This is wrong for nested includes, but we have not found this case.
-      for (let i = nextLineIdx; i < doc.lineCount; i++) {
-        if (doc.lineAt(i).text.includes(END_TAG)) {
-          endLineIdx = i;
-          break;
-        }
-      }
-      if (endLineIdx !== -1) {
-        // Reverse the commented include line
-        await editor.edit((editBuilder) => {
-          const commentedLine = doc.lineAt(incIncludeLine);
-          const commentedText = commentedLine.text;
-          const trimmedText = commentedText.trim();
-
-          if (trimmedText.endsWith(END_COMMENT_LINE) &&
-              trimmedText.startsWith(BEGIN_COMMENT_LINE)) {
-            let originalText = commentedText;
-
-            // Remove the leading BEGIN_COMMENT_LINE
-            if (originalText.startsWith(BEGIN_COMMENT_LINE)) {
-              originalText = originalText.substring(BEGIN_COMMENT_LINE.length);
-            }
-
-            // Remove the ending END_COMMENT_LINE
-            if (originalText.endsWith(END_COMMENT_LINE)) {
-              originalText = originalText.substring(
-                  0, originalText.length - END_COMMENT_LINE.length);
-            }
-
-            editBuilder.replace(
-                new vscode.Range(
-                    incIncludeLine, 0, incIncludeLine, commentedText.length),
-                originalText.trim());
-          }
-        });
-
-        // Delete the preview block
-        await editor.edit((editBuilder) => {
-          editBuilder.delete(
-              new vscode.Range(nextLineIdx, 0, endLineIdx + 1, 0));
-        });
-        return true;
-      } else {
-        vscode.window.showWarningMessage(
-            `MLIR Inc Preview: No matching ${END_TAG} found for preview`);
-        return false;
+    // Find the BEGIN_TAG line after the include line (do NOT assume it is the
+    // immediate next line, because we inserted "// clang-format on" in
+    // between).
+    let beginLineIdx = -1;
+    for (let i = incIncludeLine + 1; i < doc.lineCount; i++) {
+      if (doc.lineAt(i).text.includes(BEGIN_TAG)) {
+        beginLineIdx = i;
+        break;
       }
     }
-    return false;
+    if (beginLineIdx === -1) {
+      vscode.window.showWarningMessage(
+          `MLIR Inc Preview: No matching ${END_TAG} found for preview`);
+      return false;
+    }
+
+    // Find the matching END_TAG line after BEGIN_TAG.
+    let endLineIdx = -1;
+    for (let i = beginLineIdx; i < doc.lineCount; i++) {
+      if (doc.lineAt(i).text.includes(END_TAG)) {
+        endLineIdx = i;
+        break;
+      }
+    }
+    if (endLineIdx === -1) {
+      vscode.window.showWarningMessage(
+          `MLIR Inc Preview: No matching ${END_TAG} found for preview`);
+      return false;
+    }
+
+    // Perform ALL operations in ONE edit() call to avoid stale indices:
+    // 1) Uncomment the include line
+    // 2) Remove clang-format off/on lines around it
+    // 3) Delete the preview block
+    await editor.edit((editBuilder) => {
+      // 1) Uncomment the include line
+      const commentedLine = doc.lineAt(incIncludeLine);
+      const commentedText = commentedLine.text;
+      const trimmedText = commentedText.trim();
+
+      if (trimmedText.endsWith(END_COMMENT_LINE) &&
+          trimmedText.startsWith(BEGIN_COMMENT_LINE)) {
+        let originalText = commentedText;
+
+        // Remove the leading BEGIN_COMMENT_LINE
+        if (originalText.startsWith(BEGIN_COMMENT_LINE)) {
+          originalText = originalText.substring(BEGIN_COMMENT_LINE.length);
+        }
+
+        // Remove the ending END_COMMENT_LINE
+        if (originalText.endsWith(END_COMMENT_LINE)) {
+          originalText = originalText.substring(
+              0, originalText.length - END_COMMENT_LINE.length);
+        }
+
+        editBuilder.replace(
+            new vscode.Range(
+                incIncludeLine, 0, incIncludeLine, commentedText.length),
+            originalText.trim());
+      }
+
+      // Track how many lines we delete before the preview block, so we can
+      // adjust begin/end indices safely.
+      let shiftBeforePreview = 0;
+
+      // 2) Remove "// clang-format off" line (usually above include). We only
+      // delete if the exact line is a clang-format directive.
+      if (incIncludeLine - 1 >= 0) {
+        const offLineIdx = incIncludeLine - 1;
+        const offLine = doc.lineAt(offLineIdx);
+        if (offLine.text.trim().startsWith('// clang-format off')) {
+          editBuilder.delete(
+              new vscode.Range(offLineIdx, 0, offLineIdx + 1, 0));
+          shiftBeforePreview += 1;
+        }
+      }
+
+      // 3) Remove "// clang-format on" line.
+      if (incIncludeLine + 1 < beginLineIdx) {
+        const offLineIdx = incIncludeLine + 1;
+        const offLine = doc.lineAt(offLineIdx);
+        if (offLine.text.trim().startsWith('// clang-format on')) {
+          editBuilder.delete(
+              new vscode.Range(offLineIdx, 0, offLineIdx + 1, 0));
+          shiftBeforePreview += 1;
+        }
+      }
+
+      // 4) Delete the preview block from BEGIN_TAG to END_TAG (inclusive)
+      editBuilder.delete(new vscode.Range(beginLineIdx, 0, endLineIdx + 1, 0));
+    });
+
+    return true;
   };
 
   /**
@@ -168,8 +214,10 @@ export class PreviewManager {
 
             // 4. Create the processed content
             const processedContent = processedLines.join('\n');
-            const insertText = `${BEGIN_TAG}\n/// MLIR Inc File: ${
-                targetUri.fsPath}\n${processedContent}\n${END_TAG}\n`;
+            const insertText =
+                `${BEGIN_TAG}\n// clang-format off\n/// MLIR Inc File: ${
+                    targetUri.fsPath}\n// clang-format on\n${
+                    processedContent}\n${END_TAG}\n`;
 
             // 5. Insert the processed content
             await editor.edit((editBuilder) => {
@@ -177,8 +225,8 @@ export class PreviewManager {
                   new vscode.Position(incIncludeLine + 1, 0), insertText);
             });
 
-            // 6. Comment the original line
             await editor.edit((editBuilder) => {
+              // 6. Comment the original line
               const originalLine = doc.lineAt(incIncludeLine);
               const originalText = originalLine.text;
 
@@ -191,6 +239,14 @@ export class PreviewManager {
                         incIncludeLine, 0, incIncludeLine, originalText.length),
                     commentedText);
               }
+
+              // 7. Add clang-format off and clang-format on lines
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine, 0),
+                  '// clang-format off\n');
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine + 1, 0),
+                  '// clang-format on\n');
             });
           } else {
             // 1. Read the .inc file content
@@ -204,8 +260,8 @@ export class PreviewManager {
                   new vscode.Position(incIncludeLine + 1, 0), insertText);
             });
 
-            // 3. Comment the original line
             await editor.edit((editBuilder) => {
+              // 3. Comment the original line
               const originalLine = doc.lineAt(incIncludeLine);
               const originalText = originalLine.text;
 
@@ -218,6 +274,14 @@ export class PreviewManager {
                         incIncludeLine, 0, incIncludeLine, originalText.length),
                     commentedText);
               }
+
+              // 4. Add clang-format off and clang-format on lines
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine, 0),
+                  '// clang-format off\n');
+              editBuilder.insert(
+                  new vscode.Position(incIncludeLine + 1, 0),
+                  '// clang-format on\n');
             });
           }
 
@@ -260,19 +324,30 @@ export class PreviewManager {
 
   /**
    * Cleans all preview blocks in the current file.
+   *
+   * IMPORTANT:
+   * When deleting lines, always process from bottom to top so line indices for
+   * earlier items do not shift unexpectedly.
    */
   public static cleanAllPreviews = async(): Promise<void> => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
-    const doc = editor.document;
+    // Always recompute from the latest document snapshot.
+    let doc = editor.document;
 
     const commentedIncludeLines = findAllCommentedIncludeLines(doc);
 
     if (commentedIncludeLines.length > 0) {
-      for (const commentedIncludeLine of commentedIncludeLines) {
+      // Process from bottom to top to avoid shifting line indices.
+      for (let idx = commentedIncludeLines.length - 1; idx >= 0; idx--) {
+        // Refresh document snapshot each iteration to avoid stale reads.
+        doc = editor.document;
+
+        const commentedIncludeLine = commentedIncludeLines[idx];
         const incIncludeLine = commentedIncludeLine.start.line;
-        // Reverse the commented include line
+
+        // Reverse the commented include line and remove clang-format lines.
         await editor.edit((editBuilder) => {
           const commentedLine = doc.lineAt(incIncludeLine);
           const commentedText = commentedLine.text;
@@ -297,16 +372,41 @@ export class PreviewManager {
                 new vscode.Range(
                     incIncludeLine, 0, incIncludeLine, commentedText.length),
                 originalText.trim());
+
+            // Remove the clang-format off lines (usually the previous line)
+            if (incIncludeLine - 1 >= 0) {
+              const clangformatoffLine = doc.lineAt(incIncludeLine - 1);
+              if (clangformatoffLine.text.trim().startsWith(
+                      '// clang-format off')) {
+                editBuilder.delete(
+                    new vscode.Range(incIncludeLine - 1, 0, incIncludeLine, 0));
+              }
+            }
+
+            // Remove the clang-format on line (often between include and
+            // BEGIN_TAG) Here we just check the next line, consistent with
+            // original logic.
+            if (incIncludeLine + 1 < doc.lineCount) {
+              const clangformatonLine = doc.lineAt(incIncludeLine + 1);
+              if (clangformatonLine.text.trim().startsWith(
+                      '// clang-format on')) {
+                editBuilder.delete(new vscode.Range(
+                    incIncludeLine + 1, 0, incIncludeLine + 2, 0));
+              }
+            }
           }
         });
       }
     }
 
+    // Refresh doc snapshot after all edits above.
+    doc = editor.document;
+
     const deleteRanges = findAllPreviewBlocks(doc);
 
     if (deleteRanges.length > 0) {
       await editor.edit((editBuilder) => {
-        // Delete from bottom to top to maintain correct indices
+        // Delete from bottom to top to maintain correct indices.
         for (let i = deleteRanges.length - 1; i >= 0; i--) {
           editBuilder.delete(deleteRanges[i]);
         }

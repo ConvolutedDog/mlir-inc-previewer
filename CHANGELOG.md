@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-01-21
+
+### Added
+
+- Add test-release.sh script
+
+### Changed
+
+- Wrapped inserted preview content with `// clang-format off/on` markers to prevent automatic formatting from modifying the inserted text and making it difficult to remove during preview collapse.
+- Merged several edit actions into a single `await editor.edit()` call to reduce VS Code UI update latency and improve perceived responsiveness.
+
 ## [0.0.5] - 2026-01-20
 
 ### Added
