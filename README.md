@@ -217,52 +217,53 @@ There are several ways to clean all previews:
 
 ## 3. Known Issues
 
-- Macro-Aware Expansion Limitations: The extension attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
-   - Before:
-      ```cpp
-      void TritonDialect::initialize() {
-        registerTypes();
-        addOperations<
-      #define GET_OP_LIST
-      #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
-            >();
-      }
-      ```
-   - After:
-      ```cpp
-      void TritonDialect::initialize() {
-        registerTypes();
-        addOperations<
-      #define GET_OP_LIST
-      /// #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
-      /// --- [MLIR_INC_PREVIEW_START] ---
-      /*===- TableGen'erated file -------------------------------------*- C++ -*-===*\
-      |*                                                                            *|
-      |* Op Definitions                                                             *|
-      |*                                                                            *|
-      |* Automatically generated file, do not edit!                                 *|
-      |* From: TritonOps.td                                                         *|
-      |*                                                                            *|
-      \*===----------------------------------------------------------------------===*/
+Macro-Aware Expansion Limitations: The extension attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
 
-      #ifdef GET_OP_LIST
-      #undef GET_OP_LIST
+- Before:
+   ```cpp
+   void TritonDialect::initialize() {
+     registerTypes();
+     addOperations<
+   #define GET_OP_LIST
+   #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+         >();
+   }
+   ```
+- After:
+   ```cpp
+   void TritonDialect::initialize() {
+     registerTypes();
+     addOperations<
+   #define GET_OP_LIST
+   /// #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+   /// --- [MLIR_INC_PREVIEW_START] ---
+   /*===- TableGen'erated file -------------------------------------*- C++ -*-===*\
+   |*                                                                            *|
+   |* Op Definitions                                                             *|
+   |*                                                                            *|
+   |* Automatically generated file, do not edit!                                 *|
+   |* From: TritonOps.td                                                         *|
+   |*                                                                            *|
+   \*===----------------------------------------------------------------------===*/
 
-      ::mlir::triton::CallOp, ::mlir::triton::FuncOp,  // Other Ops...
-      #endif // GET_OP_LIST
+   #ifdef GET_OP_LIST
+   #undef GET_OP_LIST
 
-      #ifdef GET_OP_CLASSES
-      #endif // GET_OP_CLASSES  // These contents are not expanded!
+   ::mlir::triton::CallOp, ::mlir::triton::FuncOp,  // Other Ops...
+   #endif // GET_OP_LIST
 
-      /// --- [MLIR_INC_PREVIEW_END] ---
-            >();
-      }
-      ```
+   #ifdef GET_OP_CLASSES
+   #endif // GET_OP_CLASSES  // These contents are not expanded!
 
-   However, this functionality is limited by the extension's ability to detect all macros, particularly those macros defined in included files that are not recursively analyzed.
+   /// --- [MLIR_INC_PREVIEW_END] ---
+         >();
+   }
+   ```
 
-   > [!NOTE]
-   > When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
+However, this functionality is limited by the extension's ability to detect all macros, particularly those macros defined in included files that are not recursively analyzed.
+
+> [!NOTE]
+> When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
 
 ## 4. Installation
 
