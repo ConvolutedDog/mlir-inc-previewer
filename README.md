@@ -17,19 +17,18 @@
    - Press `Ctrl+Shift+Y` to expand all preview blocks
    - Press `Ctrl+S` (`Cmd+S` for MacOS) to clean all preview blocks and save file
    - Right-click -> See MLIR menu to choose one of the following actions:
-     - Expand/Collapse All Preview Content
+     - Expand/Collapse Preview
      - Expand All Preview Content
      - Clean All Preview Content
      - Clean All and Save
      - Navigate to Next Preview
    - Command palette -> Search "mlir inc" to find the `MLIR Inc` commands
 - Keyboard Shortcuts
-
-   | Shortcut | Action |
-   |----------|--------|
-   | `Ctrl+Shift+U` | Expand/Collapse a single .inc preview block |
-   | `Ctrl+Shift+Y` | Expand all preview blocks |
-   | `Ctrl+S` | Clean all preview blocks and save file |
+   | Shortcut       | Action                     |
+   |----------------|----------------------------|
+   | `Ctrl+Shift+U` | Expand/Collapse Preview    |
+   | `Ctrl+Shift+Y` | Expand All Preview Content |
+   | `Ctrl+S`       | Clean All and Save         |
 
 ## 1. Detailed Usage Instructions
 
@@ -167,7 +166,7 @@ There are several ways to clean all previews:
 
 ## 2. Advice on Better Preview Experience
 
-For better preview experience, we recommend formatting your generated .inc files with clang-format when generating them:
+- For better preview experience, we recommend formatting your generated .inc files with clang-format when generating them:
   - We provide a cmake function to format your generated .inc files: 
       ```cmake
       # AddTableGenFormat.cmake
@@ -214,10 +213,56 @@ For better preview experience, we recommend formatting your generated .inc files
       # This name must match the name of the public tablegen target
       add_mlir_tablegen_format(TritonGPUTransformsIncGen)
       ```
+- We recommend instaling the [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension for accurate .inc file navigation
 
-## 3. Requirements
+## 3. Known Issues
 
-- [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension for accurate .inc file navigation
+- Macro-Aware Expansion Limitations: The extension attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
+   - Before:
+      ```cpp
+      void TritonDialect::initialize() {
+        registerTypes();
+        addOperations<
+      #define GET_OP_LIST
+      #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+            >();
+      }
+      ```
+   - After:
+      ```cpp
+      void TritonDialect::initialize() {
+        registerTypes();
+        addOperations<
+      #define GET_OP_LIST
+      /// #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+      /// --- [MLIR_INC_PREVIEW_START] ---
+      /*===- TableGen'erated file -------------------------------------*- C++ -*-===*\
+      |*                                                                            *|
+      |* Op Definitions                                                             *|
+      |*                                                                            *|
+      |* Automatically generated file, do not edit!                                 *|
+      |* From: TritonOps.td                                                         *|
+      |*                                                                            *|
+      \*===----------------------------------------------------------------------===*/
+
+      #ifdef GET_OP_LIST
+      #undef GET_OP_LIST
+
+      ::mlir::triton::CallOp, ::mlir::triton::FuncOp,  // Other Ops...
+      #endif // GET_OP_LIST
+
+      #ifdef GET_OP_CLASSES
+      #endif // GET_OP_CLASSES  // These contents are not expanded!
+
+      /// --- [MLIR_INC_PREVIEW_END] ---
+            >();
+      }
+      ```
+
+   However, this functionality is limited by the extension's ability to detect all macros, particularly those macros defined in included files that are not recursively analyzed.
+
+   > [!NOTE]
+   > When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
 
 ## 4. Installation
 
