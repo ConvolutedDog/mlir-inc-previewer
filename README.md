@@ -165,11 +165,61 @@ There are several ways to clean all previews:
 
 - Right-click -> `MLIR Inc: Navigate to Next Preview` to jump to the next preview block in the file
 
-## 2. Requirements
+## 2. Advice on Better Preview Experience
+
+For better preview experience, we recommend formatting your generated .inc files with clang-format when generating them:
+  - We provide a cmake function to format your generated .inc files: 
+      ```cmake
+      # AddTableGenFormat.cmake
+      if(_ADD_TABLEGEN_FORMAT_INCLUDED)
+         return()
+      endif()
+      set(_ADD_TABLEGEN_FORMAT_INCLUDED TRUE)
+
+      function(add_mlir_tablegen_format target_name)
+         find_program(clang_format clang-format)
+         if(clang_format AND TABLEGEN_OUTPUT)
+            list(REMOVE_DUPLICATES TABLEGEN_OUTPUT)
+            foreach(gen_file ${TABLEGEN_OUTPUT})
+                  get_filename_component(fname ${gen_file} NAME)
+                  add_custom_command(
+                     TARGET ${target_name}
+                     POST_BUILD
+                     COMMAND ${clang_format} -i "${gen_file}"
+                     COMMENT "[Post] Formatting ${fname}..."
+                     VERBATIM
+                  )
+            endforeach()
+         elseif(NOT clang_format)
+            message(WARNING "clang-format not found, skipping TableGen formatting.")
+         elseif(NOT TABLEGEN_OUTPUT)
+            message(WARNING "No TableGen outputs found, skipping TableGen formatting.")
+         endif()
+      endfunction()
+      ```
+   - You can add the following snippet to your CMakeLists.txt:
+      ```cmake
+      include(AddTableGenFormat)
+      add_mlir_tablegen_format(PUBLIC_TABLEGEN_TARGET_NAME)
+      ```
+      This will automatically format all generated .inc files after they are built.
+   - Example:
+      ```cmake
+      set(LLVM_TARGET_DEFINITIONS Passes.td)
+      mlir_tablegen(Passes.h.inc -gen-pass-decls -name TritonGPU)
+      # The public tablegen target
+      add_public_tablegen_target(TritonGPUTransformsIncGen)
+
+      include(${PROJECT_SOURCE_DIR}/cmake/AddTableGenFormat.cmake)
+      # This name must match the name of the public tablegen target
+      add_mlir_tablegen_format(TritonGPUTransformsIncGen)
+      ```
+
+## 3. Requirements
 
 - [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension for accurate .inc file navigation
 
-## 3. Installation
+## 4. Installation
 
 There are two ways to install this extension:
 
@@ -183,6 +233,6 @@ There are two ways to install this extension:
      - `code --install-extension mlir-inc-previewer-v0.0.6.vsix`
      - VS Code UI: Extensions view -> Views and More Actions... -> Install from VSIX...
 
-## 4. Contributing
+## 5. Contributing
 
 This extension is open for contributions. Please submit issues and pull requests on the [GitHub repository](https://github.com/ConvolutedDog/mlir-inc-previewer).
