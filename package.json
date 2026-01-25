@@ -42,7 +42,7 @@
       },
       {
         "command": "mlir-inc-previewer.navigateNext",
-        "title": "MLIR Inc: Navigate Next Preview"
+        "title": "MLIR Inc: Navigate to Next Preview"
       },
       {
         "command": "mlir-inc-previewer.showHelp",

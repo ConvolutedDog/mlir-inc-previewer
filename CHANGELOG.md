@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update README.md
+- Change the tile of one command from `MLIR Inc: Navigate Next Preview` to `MLIR Inc: Navigate to Next Preview`
+
 ## [0.0.6] - 2026-01-21
 
 ### Added
