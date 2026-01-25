@@ -276,7 +276,7 @@ There are two ways to install this extension:
      - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yangjianchao16.mlir-inc-previewer)
      - [Open VSX Registry](https://open-vsx.org/extension/yangjianchao16/mlir-inc-previewer)
    - Then install with one of the following options:
-     - `code --install-extension mlir-inc-previewer-v0.0.6.vsix`
+     - `code --install-extension mlir-inc-previewer-version?.vsix`
      - VS Code UI: Extensions view -> Views and More Actions... -> Install from VSIX...
 
 ## 5. Contributing
