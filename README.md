@@ -1,5 +1,29 @@
 # MLIR Inc Previewer - VS Code Extension
 
+<p align="center">
+  <!-- Version Information -->
+  <a href="">
+    <img src="https://img.shields.io/github/v/release/ConvolutedDog/mlir-inc-previewer?color=blue&label=Release" alt="GitHub Release">
+  </a>
+  <!-- Build Status -->
+  <a href="">
+    <img src="https://github.com/ConvolutedDog/mlir-inc-previewer/actions/workflows/release.yml/badge.svg" alt="Build Status">
+  </a>
+</p>
+
+<p align="center">
+  <!-- Downloads -->
+  <a href="">
+    <img src="https://img.shields.io/github/downloads/ConvolutedDog/mlir-inc-previewer/total?color=green&label=GitHub%20DL" alt="GitHub Downloads">
+  </a>
+  <a href="">
+    <img src="https://img.shields.io/visual-studio-marketplace/d/yangjianchao16.mlir-inc-previewer?color=purple&label=VS%20Marketplace%20DL" alt="VS Marketplace Downloads">
+  </a>
+  <a href="">
+    <img src="https://img.shields.io/open-vsx/dt/yangjianchao16/mlir-inc-previewer?color=orange&label=OpenVSX%20DL" alt="OpenVSX Downloads">
+  </a>
+</p>
+
 [MLIR Inc Previewer](https://github.com/ConvolutedDog/mlir-inc-previewer) is a powerful VS Code extension designed specifically for MLIR (Multi-Level Intermediate Representation) developers that provides intelligent previewing and management of .inc files directly within your source code.
 
 <div align="center">
@@ -13,17 +37,18 @@
 
 - Open a C/C++ file containing `.inc` include statements
 - Use one of these methods:
-   - Place cursor near `#include "xxx.inc"` and press `Ctrl+Shift+U` to expand a single preview block
-   - Press `Ctrl+Shift+Y` to expand all preview blocks
-   - Press `Ctrl+S` (`Cmd+S` for MacOS) to clean all preview blocks and save file
-   - Right-click -> See MLIR menu to choose one of the following actions:
-     - Expand/Collapse Preview
-     - Expand All Preview Content
-     - Clean All Preview Content
-     - Clean All and Save
-     - Navigate to Next Preview
-   - Command palette -> Search "mlir inc" to find the `MLIR Inc` commands
+  - Place cursor near `#include "xxx.inc"` and press `Ctrl+Shift+U` to expand a single preview block
+  - Press `Ctrl+Shift+Y` to expand all preview blocks
+  - Press `Ctrl+S` (`Cmd+S` for MacOS) to clean all preview blocks and save file
+  - Right-click -> See MLIR menu to choose one of the following actions:
+    - Expand/Collapse Preview
+    - Expand All Preview Content
+    - Clean All Preview Content
+    - Clean All and Save
+    - Navigate to Next Preview
+  - Command palette -> Search "mlir inc" to find the `MLIR Inc` commands
 - Keyboard Shortcuts
+
    | Shortcut       | Action                     |
    |----------------|----------------------------|
    | `Ctrl+Shift+U` | Expand/Collapse Preview    |
@@ -123,9 +148,10 @@
   <br>
 </div>
 
+<a id="12-status-bar"></a>
+
 - The status bar displays the number of uncleaned preview blocks in the current file:
 
-<a id="12-status-bar"></a>
 <div align="center">
   <img src="docs/mlir-inc-previewer-status-bar.png" alt="Usage Example" width="350">
   <br
@@ -136,16 +162,17 @@
 ### 1.3 Basic Usage
 
 <a id="131-expand-collapse-preview"></a>
+
 #### 1.3.1 Expand/Collapse Preview
 
 - Place your cursor near a line like: `#include "SomeGenerated.inc"`
-   - Intelligent detection works within +3/-3 lines of the #include statement
-   - No need to place cursor exactly on the #include line
+  - Intelligent detection works within +3/-3 lines of the #include statement
+  - No need to place cursor exactly on the #include line
 - Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview`) to expand the preview block
 - Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview`) again to collapse the preview block
-   - Intelligent detection works both ways: Cursor can be anywhere:
-     - Within +3/-3 lines of the original #include statement
-     - Or anywhere inside the expanded preview block
+  - Intelligent detection works both ways: Cursor can be anywhere:
+    - Within +3/-3 lines of the original #include statement
+    - Or anywhere inside the expanded preview block
 
 #### 1.3.2 Expand All Preview Content
 
@@ -167,7 +194,8 @@ There are several ways to clean all previews:
 ## 2. Advice on Better Preview Experience
 
 - For better preview experience, we recommend formatting your generated .inc files with clang-format when generating them:
-  - We provide a cmake function to format your generated .inc files: 
+  - We provide a cmake function to format your generated .inc files:
+
       ```cmake
       # AddTableGenFormat.cmake
       if(_ADD_TABLEGEN_FORMAT_INCLUDED)
@@ -196,13 +224,17 @@ There are several ways to clean all previews:
          endif()
       endfunction()
       ```
-   - You can add the following snippet to your CMakeLists.txt:
+
+  - You can add the following snippet to your CMakeLists.txt:
+
       ```cmake
       include(AddTableGenFormat)
       add_mlir_tablegen_format(PUBLIC_TABLEGEN_TARGET_NAME)
       ```
+
       This will automatically format all generated .inc files after they are built.
-   - Example:
+  - Example:
+
       ```cmake
       set(LLVM_TARGET_DEFINITIONS Passes.td)
       mlir_tablegen(Passes.h.inc -gen-pass-decls -name TritonGPU)
@@ -213,6 +245,7 @@ There are several ways to clean all previews:
       # This name must match the name of the public tablegen target
       add_mlir_tablegen_format(TritonGPUTransformsIncGen)
       ```
+
 - We recommend instaling the [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension for accurate .inc file navigation
 
 ## 3. Known Issues
@@ -220,6 +253,7 @@ There are several ways to clean all previews:
 Macro-Aware Expansion Limitations: The extension attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
 
 - Before:
+
    ```cpp
    void TritonDialect::initialize() {
      registerTypes();
@@ -229,7 +263,9 @@ Macro-Aware Expansion Limitations: The extension attempts to expand .inc content
          >();
    }
    ```
+
 - After:
+
    ```cpp
    void TritonDialect::initialize() {
      registerTypes();
@@ -270,13 +306,13 @@ There are two ways to install this extension:
 
 - VS Code UI: Extensions view -> Search for "MLIR Inc Previewer" -> Click `Install`
 - Manual Install:
-   - Download the .vsix file from one of the following locations:
-     - [GitHub Releases](https://github.com/ConvolutedDog/mlir-inc-previewer/releases/latest)
-     - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yangjianchao16.mlir-inc-previewer)
-     - [Open VSX Registry](https://open-vsx.org/extension/yangjianchao16/mlir-inc-previewer)
-   - Then install with one of the following options:
-     - `code --install-extension mlir-inc-previewer-version?.vsix`
-     - VS Code UI: Extensions view -> Views and More Actions... -> Install from VSIX...
+  - Download the .vsix file from one of the following locations:
+    - [GitHub Releases](https://github.com/ConvolutedDog/mlir-inc-previewer/releases/latest)
+    - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yangjianchao16.mlir-inc-previewer)
+    - [Open VSX Registry](https://open-vsx.org/extension/yangjianchao16/mlir-inc-previewer)
+  - Then install with one of the following options:
+    - `code --install-extension mlir-inc-previewer-version?.vsix`
+    - VS Code UI: Extensions view -> Views and More Actions... -> Install from VSIX...
 
 ## 5. Contributing
 
