@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix bug of previewing help README file
+
+### Changed
+
+- Change !NOTE to NOTE in README.md
+
 ## [0.0.7] - 2026-01-25
 
 ### Changed

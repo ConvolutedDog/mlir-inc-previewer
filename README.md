@@ -262,8 +262,7 @@ Macro-Aware Expansion Limitations: The extension attempts to expand .inc content
 
 However, this functionality is limited by the extension's ability to detect all macros, particularly those macros defined in included files that are not recursively analyzed.
 
-> [!NOTE]
-> When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
+**NOTE**: When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
 
 ## 4. Installation
 

@@ -208,42 +208,63 @@ export function findAllCommentedIncludeLines(doc: vscode.TextDocument):
  * Helper to show the help documentation.
  */
 export class showHelpHelper {
+  private static async getReadmeUri(extensionUri: vscode.Uri):
+      Promise<vscode.Uri> {
+    // Try to find the readme.md file
+    try {
+      const readmeUri = vscode.Uri.joinPath(extensionUri, 'readme.md');
+      await vscode.workspace.fs.readFile(readmeUri);
+      return readmeUri;
+    } catch {
+      // Try to find other spellings
+      const possibleNames = ['README.md', 'Readme.md', 'README.MD'];
+
+      for (const name of possibleNames) {
+        try {
+          const uri = vscode.Uri.joinPath(extensionUri, name);
+          await vscode.workspace.fs.readFile(uri);
+          return uri;
+        } catch {
+          continue;
+        }
+      }
+
+      throw new Error('README file not found in extension');
+    }
+  }
+
   public static async showHelp(): Promise<void> {
     try {
       // Get the root Uri of the extension
       const extension =
           vscode.extensions.getExtension('yangjianchao16.mlir-inc-previewer');
       if (!extension) {
-        vscode.window.showErrorMessage('Extension not found');
+        vscode.window.showErrorMessage(
+            'Extension mlir-inc-previewer not found');
         return;
       }
 
-      // Open the README.md file
-      const readmeUri =
-          vscode.Uri.joinPath(extension.extensionUri, 'README.md');
-      const document = await vscode.workspace.openTextDocument(readmeUri);
-      await vscode.window.showTextDocument(document, {
-        viewColumn: vscode.ViewColumn.One,
-        preview: true,
-        preserveFocus: true
-      });
-
-      // Open the preview
-      if (ifPreviewReadme) {
-        await vscode.commands.executeCommand(
-            'markdown.showPreview', document.uri);
-      }
+      // Get the original README URI
+      const originalReadmeUri = await this.getReadmeUri(extension.extensionUri);
+      // Open the preview of the temporary file
+      await vscode.commands.executeCommand(
+          'markdown.showPreview', originalReadmeUri);
     } catch (error) {
-      vscode.window
-          .showInformationMessage(
-              'MLIR Inc Previewer: Check README.md for documentation',
-              'Open GitHub')
-          .then(selection => {
-            if (selection === 'Open GitHub') {
-              vscode.env.openExternal(vscode.Uri.parse(
-                  'https://github.com/ConvolutedDog/mlir-inc-previewer'));
-            }
-          });
+      try {
+        vscode.window
+            .showInformationMessage(
+                'MLIR Inc Previewer: Check README.md for documentation',
+                'Open GitHub')
+            .then(selection => {
+              if (selection === 'Open GitHub') {
+                vscode.env.openExternal(vscode.Uri.parse(
+                    'https://github.com/ConvolutedDog/mlir-inc-previewer'));
+              }
+            });
+      } catch (error) {
+        vscode.window.showErrorMessage(
+            'Error showing help for mlir-inc-previewer');
+      }
     }
   }
 }
