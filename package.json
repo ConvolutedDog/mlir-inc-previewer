@@ -3,7 +3,7 @@
   "icon": "docs/icon.png",
   "displayName": "MLIR Inc Previewer",
   "description": "Streamline MLIR development by previewing and managing .inc files automatically.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "yangjianchao16",
   "repository": {
     "type": "git",
