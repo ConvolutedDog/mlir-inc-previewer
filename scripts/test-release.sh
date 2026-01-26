@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PKG_JSON="$ROOT_DIR/../package.json"
 LOCK_JSON="$ROOT_DIR/../package-lock.json"
+CHANGELOG_MD="$ROOT_DIR/../CHANGELOG.md"
 
 if [[ ! -f "$PKG_JSON" ]]; then
     echo "✘ package.json not found: $PKG_JSON"
@@ -34,6 +35,49 @@ else
     echo "  name:    $PKG_NAME"
     echo "  version: $PKG_VERSION"
 fi
+
+# Check CHANGELOG.md for version entry
+echo "==> Checking CHANGELOG.md for version $PKG_VERSION"
+
+if [[ ! -f "$CHANGELOG_MD" ]]; then
+    echo "✘ CHANGELOG.md not found: $CHANGELOG_MD"
+    exit 1
+else
+    echo "✔ CHANGELOG.md found: $CHANGELOG_MD"
+fi
+
+PATTERNS=(
+    "^## \\[${PKG_VERSION}\\]"      # Example: ## [0.0.8]
+)
+
+FOUND=false
+for pattern in "${PATTERNS[@]}"; do
+    if grep -q -E "$pattern" "$CHANGELOG_MD"; then
+        FOUND=true
+        echo "✔ Found CHANGELOG entry matching pattern: $pattern"
+        break
+    fi
+done
+
+if [[ "$FOUND" = false ]]; then
+    echo "✘ No CHANGELOG entry found for version $PKG_VERSION"
+    echo "  Expected format example:"
+    echo "    ## [0.0.8] - 2025-01-26"
+    echo "  Please add an entry to CHANGELOG.md before releasing."
+    exit 1
+fi
+
+if grep -q -E "\[${PKG_VERSION}\].*-.*[0-9]{4}-[0-9]{2}-[0-9]{2}" "$CHANGELOG_MD"; then
+    echo "✔ CHANGELOG entry includes date format"
+else
+    echo "✘ CHANGELOG entry may not include date"
+    echo "  Expected format example:"
+    echo "    ## [0.0.8] - 2025-01-26"
+    exit 1
+fi
+
+# Check CHANGELOG.md for version entry
+echo "==> Checking Git Tag for version v$PKG_VERSION"
 
 GIT_TAG="v$PKG_VERSION"
 
