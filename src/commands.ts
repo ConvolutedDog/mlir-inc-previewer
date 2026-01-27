@@ -16,13 +16,21 @@ export function registerCommands(context: vscode.ExtensionContext):
   // Command 1: Expand/Collapse Preview
   disposables.push(vscode.commands.registerCommand(
       'mlir-inc-previewer.openSide', async () => {
-        await PreviewManager.togglePreview();
+        await PreviewManager.togglePreview(/* macroAware= */ true);
+      }));
+  disposables.push(vscode.commands.registerCommand(
+      'mlir-inc-previewer.openSideFull', async () => {
+        await PreviewManager.togglePreview(/* macroAware= */ false);
       }));
 
   // Command 2: Expand All Preview
   disposables.push(vscode.commands.registerCommand(
       'mlir-inc-previewer.expandAll', async () => {
-        await PreviewManager.expandAllPreview();
+        await PreviewManager.expandAllPreview(/* macroAware= */ true);
+      }));
+  disposables.push(vscode.commands.registerCommand(
+      'mlir-inc-previewer.expandAllFull', async () => {
+        await PreviewManager.expandAllPreview(/* macroAware= */ false);
       }));
 
   // Command 3: Clean All Preview Content

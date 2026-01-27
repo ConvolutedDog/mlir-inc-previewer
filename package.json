@@ -3,7 +3,7 @@
   "icon": "docs/icon.png",
   "displayName": "MLIR Inc Previewer",
   "description": "Streamline MLIR development by previewing and managing .inc files automatically.",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "publisher": "yangjianchao16",
   "repository": {
     "type": "git",
@@ -26,27 +26,43 @@
     "commands": [
       {
         "command": "mlir-inc-previewer.openSide",
-        "title": "MLIR Inc: Expand/Collapse Preview"
+        "title": "MLIR Inc: Expand/Collapse Preview (Macro-aware)",
+        "category": "MLIR Inc Previewer"
       },
       {
         "command": "mlir-inc-previewer.expandAll",
-        "title": "MLIR Inc: Expand All Preview Content"
+        "title": "MLIR Inc: Expand All Preview Content (Macro-aware)",
+        "category": "MLIR Inc Previewer"
+      },
+      {
+        "command": "mlir-inc-previewer.openSideFull",
+        "title": "MLIR Inc: Expand/Collapse Preview (Macro-unaware)",
+        "category": "MLIR Inc Previewer"
+      },
+      {
+        "command": "mlir-inc-previewer.expandAllFull",
+        "title": "MLIR Inc: Expand All Preview Content (Macro-unaware)",
+        "category": "MLIR Inc Previewer"
       },
       {
         "command": "mlir-inc-previewer.cleanAll",
-        "title": "MLIR Inc: Clean All Preview Content"
+        "title": "MLIR Inc: Clean All Preview Content",
+        "category": "MLIR Inc Previewer"
       },
       {
         "command": "mlir-inc-previewer.cleanAndSave",
-        "title": "MLIR Inc: Clean All and Save"
+        "title": "MLIR Inc: Clean All and Save",
+        "category": "MLIR Inc Previewer"
       },
       {
         "command": "mlir-inc-previewer.navigateNext",
-        "title": "MLIR Inc: Navigate to Next Preview"
+        "title": "MLIR Inc: Navigate to Next Preview",
+        "category": "MLIR Inc Previewer"
       },
       {
         "command": "mlir-inc-previewer.showHelp",
-        "title": "MLIR Inc: Show Help"
+        "title": "MLIR Inc: Show Help",
+        "category": "MLIR Inc Previewer"
       }
     ],
     "keybindings": [
@@ -63,6 +79,18 @@
         "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
       },
       {
+        "command": "mlir-inc-previewer.openSideFull",
+        "key": "ctrl+shift+j",
+        "mac": "ctrl+shift+j",
+        "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+      },
+      {
+        "command": "mlir-inc-previewer.expandAllFull",
+        "key": "ctrl+shift+h",
+        "mac": "ctrl+shift+h",
+        "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+      },
+      {
         "command": "mlir-inc-previewer.cleanAndSave",
         "key": "ctrl+s",
         "mac": "cmd+s",
@@ -71,6 +99,13 @@
     ],
     "menus": {
       "editor/context": [
+        {
+          "submenu": "mlir-inc-previewer/menu",
+          "group": "mlir_group",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+        }
+      ],
+      "mlir-inc-previewer/menu": [
         {
           "command": "mlir-inc-previewer.openSide",
           "group": "mlir_group@1",
@@ -82,27 +117,44 @@
           "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
-          "command": "mlir-inc-previewer.cleanAll",
+          "command": "mlir-inc-previewer.openSideFull",
           "group": "mlir_group@3",
           "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
-          "command": "mlir-inc-previewer.cleanAndSave",
+          "command": "mlir-inc-previewer.expandAllFull",
           "group": "mlir_group@4",
           "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
-          "command": "mlir-inc-previewer.navigateNext",
+          "command": "mlir-inc-previewer.cleanAll",
           "group": "mlir_group@5",
           "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         },
         {
+          "command": "mlir-inc-previewer.cleanAndSave",
+          "group": "mlir_group@6",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+        },
+        {
+          "command": "mlir-inc-previewer.navigateNext",
+          "group": "mlir_group@7",
+          "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
+        },
+        {
           "command": "mlir-inc-previewer.showHelp",
-          "group": "mlir_group@5",
+          "group": "mlir_group@8",
           "when": "editorTextFocus && (editorLangId == 'cpp' || editorLangId == 'c' || editorLangId == 'cuda-cpp') && resourceExtname =~ /\\.(c|cc|cp|cpp|cxx|c\\+\\+|h|hh|hp|hpp|hxx|h\\+\\+|inl|inc|ipp|tcc|tpp|def|cuh|cu)$/i"
         }
       ]
-    }
+    },
+    "submenus": [
+      {
+        "id": "mlir-inc-previewer/menu",
+        "label": "MLIR Inc Previewer",
+        "icon": "$(folder)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

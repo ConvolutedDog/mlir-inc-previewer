@@ -16,7 +16,7 @@ export class PreviewManager {
   /**
    * Toggles preview for .inc file at current cursor position.
    */
-  public static togglePreview = async(): Promise<void> => {
+  public static togglePreview = async(macroAware: boolean): Promise<void> => {
     const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
     if (!editor) return;
 
@@ -41,7 +41,8 @@ export class PreviewManager {
       const incIncludeLine: number = findIncIncludeLine(doc, currentLine);
       if (incIncludeLine !== -1) {
         // Otherwise expand
-        await PreviewManager.expandPreview(editor, doc, incIncludeLine);
+        await PreviewManager.expandPreview(
+            editor, doc, incIncludeLine, macroAware);
       } else {
         vscode.window.showWarningMessage(
             'MLIR Inc Preview: No .inc include statement found near cursor');
@@ -161,7 +162,7 @@ export class PreviewManager {
    */
   private static expandPreview = async(
       editor: vscode.TextEditor, doc: vscode.TextDocument,
-      incIncludeLine: number): Promise<void> => {
+      incIncludeLine: number, macroAware: boolean): Promise<void> => {
     try {
       const targetPosition = new vscode.Position(incIncludeLine, 0);
       editor.selection = new vscode.Selection(targetPosition, targetPosition);
@@ -193,23 +194,29 @@ export class PreviewManager {
 
             // 3. Process each line of the .inc file, applying the current macro
             // state
-            for (let i = 0; i < incLines.length; i++) {
-              const line = incLines[i];
-              const trimmed = line.trim();
-              macroManager.processLine(trimmed, i + incIncludeLine);
+            if (macroAware) {
+              for (let i = 0; i < incLines.length; i++) {
+                const line = incLines[i];
+                const trimmed = line.trim();
+                macroManager.processLine(trimmed, i + incIncludeLine);
 
-              if (trimmed.startsWith('#if') || trimmed.startsWith('#ifndef') ||
-                  trimmed.startsWith('#if defined') ||
-                  trimmed.startsWith('#if !defined') ||
-                  trimmed.startsWith('#elif') || trimmed.startsWith('#else') ||
-                  trimmed.startsWith('#endif')) {
-                processedLines.push(line);
-                continue;
-              }
+                if (trimmed.startsWith('#if') ||
+                    trimmed.startsWith('#ifndef') ||
+                    trimmed.startsWith('#if defined') ||
+                    trimmed.startsWith('#if !defined') ||
+                    trimmed.startsWith('#elif') ||
+                    trimmed.startsWith('#else') ||
+                    trimmed.startsWith('#endif')) {
+                  processedLines.push(line);
+                  continue;
+                }
 
-              if (macroManager.isCurrentLineActive()) {
-                processedLines.push(line);
+                if (macroManager.isCurrentLineActive()) {
+                  processedLines.push(line);
+                }
               }
+            } else {
+              processedLines.push(...incLines);
             }
 
             // 4. Create the processed content
@@ -304,7 +311,8 @@ export class PreviewManager {
   /**
    * Expands all preview blocks in the current file.
    */
-  public static expandAllPreview = async(): Promise<void> => {
+  public static expandAllPreview =
+      async(macroAware: boolean): Promise<void> => {
     const editor: vscode.TextEditor|undefined = vscode.window.activeTextEditor;
     if (!editor) return;
 
@@ -315,7 +323,8 @@ export class PreviewManager {
     // Expand each .inc file
     while (allIncLines.length > 0) {
       const incIncludeLine = allIncLines[0];
-      await PreviewManager.expandPreview(editor, currentDoc, incIncludeLine);
+      await PreviewManager.expandPreview(
+          editor, currentDoc, incIncludeLine, macroAware);
       // Reget document and line number caused by inserting content
       currentDoc = editor.document;
       allIncLines = findAllIncIncludeLine(currentDoc);

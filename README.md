@@ -41,19 +41,27 @@
   - Press `Ctrl+Shift+Y` to expand all preview blocks
   - Press `Ctrl+S` (`Cmd+S` for MacOS) to clean all preview blocks and save file
   - Right-click -> See MLIR menu to choose one of the following actions:
-    - Expand/Collapse Preview
-    - Expand All Preview Content
+    - Expand/Collapse Preview (Macro-aware)
+    - Expand All Preview Content (Macro-aware)
+    - Expand/Collapse Preview (Macro-unaware)
+    - Expand All Preview Content (Macro-unaware)
     - Clean All Preview Content
     - Clean All and Save
     - Navigate to Next Preview
   - Command palette -> Search "mlir inc" to find the `MLIR Inc` commands
+- The difference between macro-aware and macro-unaware previewing:
+  - The **macro-unaware** mode expands the full content of the .inc file, regardless of whether the content depends on macros or not.
+  - However, the **macro-aware** mode attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded.
+    - Please refer to [this example](#3-known-issues) to see the difference between macro-aware and macro-unaware previewing.
 - Keyboard Shortcuts
 
-   | Shortcut       | Action                     |
-   |----------------|----------------------------|
-   | `Ctrl+Shift+U` | Expand/Collapse Preview    |
-   | `Ctrl+Shift+Y` | Expand All Preview Content |
-   | `Ctrl+S`       | Clean All and Save         |
+   | Shortcut       | Action                                     |
+   |----------------|--------------------------------------------|
+   | `Ctrl+Shift+U` | Expand/Collapse Preview (Macro-aware)      |
+   | `Ctrl+Shift+Y` | Expand All Preview Content (Macro-aware)   |
+   | `Ctrl+Shift+J` | Expand/Collapse Preview (Macro-unaware)    |
+   | `Ctrl+Shift+H` | Expand All Preview Content (Macro-unaware) |
+   | `Ctrl+S`       | Clean All and Save                         |
 
 ## 1. Detailed Usage Instructions
 
@@ -133,7 +141,7 @@
 - You can right-click on any C/C++ file containing .inc includes to open the MLIR Inc Previewer menu:
 
 <div align="center">
-  <img src="docs/mlir-inc-previewer-menu.png" alt="Usage Example" width="300">
+  <img src="docs/mlir-inc-previewer-menu.png" alt="Usage Example" width="600">
   <br
   <strong>MLIR Inc Previewer Menu</strong>
   <br>
@@ -163,22 +171,32 @@
 
 <a id="131-expand-collapse-preview"></a>
 
-#### 1.3.1 Expand/Collapse Preview
+#### 1.3.1 Expand/Collapse Preview (Macro-aware)
 
 - Place your cursor near a line like: `#include "SomeGenerated.inc"`
   - Intelligent detection works within +3/-3 lines of the #include statement
   - No need to place cursor exactly on the #include line
-- Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview`) to expand the preview block
-- Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview`) again to collapse the preview block
+- Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview (Macro-aware)`) to expand the preview block
+- Press `Ctrl+Shift+U` (or right-click -> `MLIR Inc: Expand/Collapse Preview (Macro-aware)`) again to collapse the preview block
   - Intelligent detection works both ways: Cursor can be anywhere:
     - Within +3/-3 lines of the original #include statement
     - Or anywhere inside the expanded preview block
 
-#### 1.3.2 Expand All Preview Content
+#### 1.3.2 Expand All Preview Content (Macro-aware)
 
-- Press `Ctrl+Shift+Y` (or right-click -> `MLIR Inc: Expand All Preview Content`) to expand all preview blocks
+- Press `Ctrl+Shift+Y` (or right-click -> `MLIR Inc: Expand All Preview Content (Macro-aware)`) to expand all preview blocks
 
-#### 1.3.3 Clean All Preview Content
+#### 1.3.3 Expand/Collapse Preview (Macro-unaware)
+
+- Use `Ctrl+Shift+J` instead of `Ctrl+Shift+U` to preview all code contents ignoring macro definations
+- Right-click -> `MLIR Inc: Expand/Collapse Preview (Macro-unaware)` instead of `MLIR Inc: Expand/Collapse Preview (Macro-aware)` to preview all code contents ignoring macro definations
+
+#### 1.3.4 Expand All Preview Content (Macro-unaware)
+
+- Use `Ctrl+Shift+H` instead of `Ctrl+Shift+Y` to preview all code contents ignoring macro definations
+- Right-click -> `MLIR Inc: Expand All Preview Content (Macro-unaware)` instead of `MLIR Inc: Expand All Preview Content (Macro-aware)` to preview all code contents ignoring macro definations
+
+#### 1.3.5 Clean All Preview Content
 
 There are several ways to clean all previews:
 
@@ -187,7 +205,7 @@ There are several ways to clean all previews:
 - As mentioned in the Status Bar in [1.2](#12-status-bar), click the status bar to collapse all preview blocks
 - <u>**Most importantly**, we currently do not allow saving expanded preview blocks to files.</u> Therefore, if you execute ***Save*** (`Ctrl+S` for Windows and `Cmd+S` for macOS), we will first clean all preview blocks and then perform the regular ***Save*** operation.
 
-#### 1.3.4 Navigate to Next Preview
+#### 1.3.6 Navigate to Next Preview
 
 - Right-click -> `MLIR Inc: Navigate to Next Preview` to jump to the next preview block in the file
 
@@ -248,57 +266,59 @@ There are several ways to clean all previews:
 
 - We recommend instaling the [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension for accurate .inc file navigation
 
+<a id="3-known-issues"></a>
+
 ## 3. Known Issues
 
-Macro-Aware Expansion Limitations: The extension attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
+Macro-Aware Expansion Limitations: The **macro-aware** mode attempts to expand .inc content based on macro definitions in the current file. For example, if only `GET_OP_LIST` is defined, content that depends on `GET_OP_CLASSES` will not be expanded:
 
 - Before:
 
-   ```cpp
-   void TritonDialect::initialize() {
-     registerTypes();
-     addOperations<
-   #define GET_OP_LIST
-   #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
-         >();
-   }
-   ```
+  ```cpp
+  void TritonDialect::initialize() {
+    registerTypes();
+    addOperations<
+  #define GET_OP_LIST
+  #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+        >();
+  }
+  ```
 
 - After:
 
-   ```cpp
-   void TritonDialect::initialize() {
-     registerTypes();
-     addOperations<
-   #define GET_OP_LIST
-   /// #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
-   /// --- [MLIR_INC_PREVIEW_START] ---
-   /*===- TableGen'erated file -------------------------------------*- C++ -*-===*\
-   |*                                                                            *|
-   |* Op Definitions                                                             *|
-   |*                                                                            *|
-   |* Automatically generated file, do not edit!                                 *|
-   |* From: TritonOps.td                                                         *|
-   |*                                                                            *|
-   \*===----------------------------------------------------------------------===*/
+  ```cpp
+  void TritonDialect::initialize() {
+    registerTypes();
+    addOperations<
+  #define GET_OP_LIST
+  /// #include "triton/Dialect/Triton/IR/Ops.cpp.inc"
+  /// --- [MLIR_INC_PREVIEW_START] ---
+  /*===- TableGen'erated file -------------------------------------*- C++ -*-===*\
+  |*                                                                            *|
+  |* Op Definitions                                                             *|
+  |*                                                                            *|
+  |* Automatically generated file, do not edit!                                 *|
+  |* From: TritonOps.td                                                         *|
+  |*                                                                            *|
+  \*===----------------------------------------------------------------------===*/
 
-   #ifdef GET_OP_LIST
-   #undef GET_OP_LIST
+  #ifdef GET_OP_LIST
+  #undef GET_OP_LIST
 
-   ::mlir::triton::CallOp, ::mlir::triton::FuncOp,  // Other Ops...
-   #endif // GET_OP_LIST
+  ::mlir::triton::CallOp, ::mlir::triton::FuncOp,  // Other Ops...
+  #endif // GET_OP_LIST
 
-   #ifdef GET_OP_CLASSES
-   #endif // GET_OP_CLASSES  // These contents are not expanded!
+  #ifdef GET_OP_CLASSES
+  #endif // GET_OP_CLASSES  // These contents are not expanded!
 
-   /// --- [MLIR_INC_PREVIEW_END] ---
-         >();
-   }
-   ```
+  /// --- [MLIR_INC_PREVIEW_END] ---
+        >();
+  }
+  ```
 
 However, this functionality is limited by the extension's ability to detect all macros, particularly those macros defined in included files that are not recursively analyzed.
 
-**NOTE**: When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. This feature works accurately when using `Expand All Preview Content` sequentially from top to bottom.
+**NOTE**: When expanding .inc files out of order (expanding a later .inc before earlier ones in the same file), the macro context may be incomplete, leading to potentially inaccurate filtering. Basically, this feature works accurately when using `Expand All Preview Content (Macro-aware)` sequentially from top to bottom. Also you can choose to use `Expand All Preview Content (Macro-unaware)` to expand all .inc files at once.
 
 ## 4. Installation
 
